@@ -46,20 +46,53 @@ class Ball extends THREE.Object3D {
     constructor(x, y, z, radius) {
         'use strict'
         super();
-        this.radius = radius
+        var velocityX = Math.random() * (20 + 15) - 17.5;
+        var velocityZ = Math.random() * (20 + 15) - 17.5;
+        this.velocity = new THREE.Vector3(velocityX, 0, velocityZ);
+        this.radius = radius;
+        this.x = 0;
+        this.y = y;
+        this.z = 0;
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
         this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, wireframe: true} );
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.position.set(x, y, z);
-        this.velocity = 10;
-        this.direction = new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1).normalize(); //makes it a unit vector
-
+        
+        this.axes = new THREE.AxisHelper(1.5*radius);
+		this.vectorX = new THREE.Vector3(-1,0,0);
+		this.vectorZ = new THREE.Vector3(0,0,1);
 
         this.add(this.mesh);
+        this.add(this.axes);
         scene.add(this);
     }
 
-    animate(delta) {
+    rotateVelocity(velocity, angle){
+		var x = velocity.x * Math.cos(angle) - velocity.z * Math.sin(angle);
+		var z = velocity.x * Math.sin(angle) + velocity.z * Math.cos(angle);
+
+        return new THREE.Vector3(x,0,z)
+    }
+    
+    updatePosition(delta){
+		var velocityX = this.velocity.getComponent(0);
+		var velocityZ = this.velocity.getComponent(2);
+
+		this.x += velocityX*delta;
+		this.z += velocityZ*delta;
+
+		this.position.set(this.x,this.y,this.z);
+
+		var angleX = -velocityX*delta/this.radius;
+		var angleZ = -velocityZ*delta/this.radius;
+
+		this.rotateOnAxis(this.vectorX, angleX);
+		this.vectorZ.applyAxisAngle(this.vectorX,-angleX);
+		this.rotateOnAxis(this.vectorZ, angleZ);
+		this.vectorX.applyAxisAngle(this.vectorZ,-angleZ);
+    }
+
+    /*animate(delta) {
         if(this.velocity > 0) this.velocity = Math.max(0, this.velocity - 2 * delta); //friction
         else if(this.velocity === 0) {
             this.direction = 0;
@@ -70,7 +103,7 @@ class Ball extends THREE.Object3D {
         this.rotateX(delta * this.velocity / this.radius);
         this.rotateZ(delta * this.velocity / this.radius);
         //console.log(this.direction);
-    }
+    }*/
 
 }
 
@@ -306,6 +339,7 @@ function render() {
     'use strict';
     delta = clock.getDelta();
     keyPressed(delta);
+    ball.updatePosition(delta);
     renderer.render(scene, camera);
 }
 
@@ -345,11 +379,7 @@ function init() {
 
 function animate() {
     "use strict";
-    delta = clock.getDelta();
 
-    ball.animate(delta);
-    
     render();
-
     requestAnimationFrame(animate);
 }
