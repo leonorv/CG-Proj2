@@ -1,6 +1,6 @@
 const x_axis = new THREE.Vector3(1, 0, 0);
-const Y_AXIS = new THREE.Vector3(0, 1, 0);
-const Z_AXIS = new THREE.Vector3(0, 0, 1);
+const y_axis = new THREE.Vector3(0, 1, 0);
+const z_axis = new THREE.Vector3(0, 0, 1);
 
 var camera, scene, renderer;
 
@@ -11,10 +11,8 @@ var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
 var cameraTop, cameraPerspective;
 var frustumSize = 100;
 var table_base, table, table_top;
-var pocket1, pocket2, pocket3, pocket4, pocket5, pocket6;
 var sticks = new Array();
 var balls = new Array();
-var ball;
 
 var selected_stickID = 0;
 
@@ -32,16 +30,6 @@ var keys = {
     32: false, //space for shooting the ball
 }
 
-const calcAngleToRotate = (vector) => {
-    if (vector.x == 0 && vector.z == 0) {
-      return 0
-    } else if ((vector.x >= 0 && vector.z >= 0) || (vector.x <= 0 && vector.z >= 0)) {
-      return Math.PI * 2 - vector.angleTo(X_AXIS)
-    } else {
-      return vector.angleTo(X_AXIS)
-    }
-  }
-
 class Ball extends THREE.Object3D {
     constructor(x, y, z, radius, direction, velocity) {
         'use strict'
@@ -52,7 +40,6 @@ class Ball extends THREE.Object3D {
         this.angle = 0;
         this.position.set(x, y, z);
         
-
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
         this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, wireframe: true} );
         this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -63,7 +50,7 @@ class Ball extends THREE.Object3D {
         else if (this.direction.x != 0 && this.direction.z < 0)
             this.angle = this.direction.angleTo(x_axis);
 
-        this.rotateY( this.angle );
+        this.rotateY(this.angle);
 
         this.dirChanged = false;
      
@@ -81,24 +68,10 @@ class Ball extends THREE.Object3D {
         return new THREE.Vector3(x,0,z)
     }
     
-    updatePosition(delta){
+    update(delta){
 		this.translateOnAxis(x_axis, this.velocity * delta / 5);
         this.mesh.rotateZ(-this.velocity * delta /10 );
     }
-
-    /*animate(delta) {
-        if(this.velocity > 0) this.velocity = Math.max(0, this.velocity - 2 * delta); //friction
-        else if(this.velocity === 0) {
-            this.direction = 0;
-            return
-        }
-        this.position.add(this.direction.clone().multiplyScalar(this.velocity * delta));
-        //this.setRotationFromAxisAngle(Y_AXIS, calcAngleToRotate(this.direction) + Math.PI / 2)
-        this.rotateX(delta * this.velocity / this.radius);
-        this.rotateZ(delta * this.velocity / this.radius);
-        //console.log(this.direction);
-    }*/
-
 }
 
 class Wall extends THREE.Object3D {
@@ -122,32 +95,47 @@ class TableTop extends THREE.Object3D {
         this.width = width;
         this.length = length;
         this.height = height;
+        this.pockets = new Array();
         this.material = new THREE.MeshBasicMaterial({ color: 0x073417});
         this.geometry = new THREE.BoxGeometry(width, height, length);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         this.position.set(x, y, z);
-
-        this.wall1 = new Wall(this.width);
-        this.wall1.position.set(0, this.height/2, this.length/2);
-
-        this.wall2 = new Wall(this.width);
-        this.wall2.position.set(0, this.height/2, -this.length/2);
-
-        this.wall3 = new Wall(this.length);
-        this.wall3.position.set(this.width/2, this.height/2, 0);
-        this.wall3.rotateY(Math.PI/2)
-
-        this.wall4 = new Wall(this.length);
-        this.wall4.position.set(-this.width/2, this.height/2, 0);
-        this.wall4.rotateY(Math.PI/2);
-
-        this.add(this.wall1);
-        this.add(this.wall2);
-        this.add(this.wall3);
-        this.add(this.wall4);
-
+        this.walls = new Array();
+        this.addWalls();
         scene.add(this);
+    }
+
+    addWalls() {
+        this.walls.push(new Wall(this.width));
+        this.walls[0].position.set(0, this.position.y + this.height, this.length/2);
+
+        this.walls.push(new Wall(this.width));
+        this.walls[1].position.set(0, this.position.y + this.height, -this.length/2);
+
+        this.walls.push(new Wall(this.length));
+        this.walls[2].position.set(this.width/2, this.position.y + this.height, 0);
+        this.walls[2].rotateY(Math.PI/2)
+
+        this.walls.push(new Wall(this.length));
+        this.walls[3].position.set(-this.width/2, this.position.y + this.height, 0);
+        this.walls[3].rotateY(Math.PI/2);
+
+        for(var i; i < 4; i++) {
+            this.add(this.walls[i]);
+        }
+    }
+
+    addPockets() {
+        this.pockets.push(new Pocket(-this.width/2+2, 0, -this.length/2+2, this.height)); //upleft
+        this.pockets.push(new Pocket(this.width/2-2, 0, -this.length/2+2, this.height)); //upright
+        this.pockets.push(new Pocket(-this.width/2+2, 0, this.length/2-2, this.height)); //downleft
+        this.pockets.push(new Pocket(this.width/2-2, 0, this.length/2-2, this.height)); //downRight
+        this.pockets.push(new Pocket(0, 0, -this.length/2+2, this.height)); //middleLeft
+        this.pockets.push(new Pocket(0, 0, this.length/2-2, this.height)); //middleright
+        for(var i; i < 6; i++) {
+            this.add(pockets[i]);
+        }
     }
 }
 
@@ -196,25 +184,40 @@ class CueStick extends THREE.Object3D {
 }
 
 class Table extends THREE.Object3D {
-    constructor(table_base, table_top, p1, p2, p3, p4, p5, p6) {
+    constructor(table_base, table_top) {
         'use strict';
         super();
         this.base = table_base;
         this.top = table_top;
-        this.pocket_upLeft = p1;
-        this.pocket_upRight = p2;
-        this.pocket_downLeft = p3;
-        this.pocket_downRight = p4;
-        this.pocket_middleLeft = p5;
-        this.pocket_middleRight = p6;
-        this.top.add(this.pocket_upLeft);
-        this.top.add(this.pocket_upRight);
-        this.top.add(this.pocket_downLeft);
-        this.top.add(this.pocket_downRight);
-        this.top.add(this.pocket_middleLeft);
-        this.top.add(this.pocket_middleRight);
         this.base.add(this.top);
     }
+}
+
+function createBalls(n, radius) {
+    for(var i = 0; i < n; i++) {
+        var x = Math.random() * (table_top.width - radius) - (table_top.width-radius)/2;
+        var z = Math.random() * (table_top.length - radius) - (table_top.length-radius)/2;
+        var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 20);
+        balls.push(ball);
+        scene.add(ball);
+    }
+}
+
+function createCueSticks() {
+    var cueHeight = table_base.height+ table_top.height + table_top.walls[0].height/2;
+    sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0)); //front
+    sticks.push(new CueStick(-table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0));
+    sticks.push(new CueStick(table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0)); //back
+    sticks.push(new CueStick(-table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0));
+    sticks.push(new CueStick(table_top.length + 20, cueHeight, 0, 20, Math.PI/2, Math.PI/2)); //heads of the table
+    sticks.push(new CueStick(-table_top.length - 20, cueHeight, 0, 20, Math.PI/2, -Math.PI/2));
+}
+
+function createTable() {
+    table_base = new TableBase(0, 0, 0, 15);
+    table_top = new TableTop(0, table_base.height+2.5, 0, 60, 5, 30);
+    table = new Table(table_base, table_top);
+    scene.add(table);
 }
 
 
@@ -223,41 +226,11 @@ function createScene() {
 
     scene = new THREE.Scene();
     scene.add(new THREE.AxisHelper(10));
-
     scene.add(new THREE.AmbientLight(0x404040)); //soft ambient light
 
-    table_base = new TableBase(0, 0, 0, 15);
-    table_top = new TableTop(0, table_base.height+2.5, 0, 60, 5, 30);
-    pocket1 = new Pocket(-table_top.width/2+2, 0, -table_top.length/2+2, table_top.height);
-    pocket2 = new Pocket(table_top.width/2-2, 0, -table_top.length/2+2, table_top.height);
-    pocket3 = new Pocket(-table_top.width/2+2, 0, table_top.length/2-2, table_top.height);
-    pocket4 = new Pocket(table_top.width/2-2, 0, table_top.length/2-2, table_top.height);
-    pocket5 = new Pocket(0, 0, -table_top.length/2+2, table_top.height);
-    pocket6 = new Pocket(0, 0, table_top.length/2-2, table_top.height);
-
-    var cueHeight = table_base.height+ table_top.height + table_top.wall1.height/2;
-
-    var stick1 = new CueStick(table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0); //front
-    var stick2 = new CueStick(-table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0);
-
-    var stick3 = new CueStick(table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0); //back
-    var stick4 = new CueStick(-table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0);
-
-    var stick5 = new CueStick(table_top.length + 20, cueHeight, 0, 20, Math.PI/2, Math.PI/2); //heads of the table
-    var stick6 = new CueStick(-table_top.length - 20, cueHeight, 0, 20, Math.PI/2, -Math.PI/2);
-
-    sticks.push(stick1);
-    sticks.push(stick2);
-    sticks.push(stick3);
-    sticks.push(stick4);
-    sticks.push(stick5);
-    sticks.push(stick6);
-
-    table = new Table(table_base, table_top, pocket1, pocket2, pocket3, pocket4, pocket5, pocket6);
-    scene.add(table);
-
-    //TEST BALL
-    ball = new Ball(0, table_base.height+ table_top.height + 2.5, 0, 4, new THREE.Vector3(0,0,0), 5);
+    createTable();
+    createCueSticks();
+    createBalls(15, 1.5);
 }
 
 function createCamera() {
@@ -268,7 +241,7 @@ function createCamera() {
     cameraTop.position.set(0,frustumSize,0);
     cameraTop.lookAt(scene.position);
     scene.add(cameraTop);
-    
+    /*PERSPECTIVE POSITION*/
     cameraPerspective.position.set(50, 50, 50);
     cameraPerspective.lookAt(scene.position);
     scene.add(cameraPerspective);
@@ -277,7 +250,6 @@ function createCamera() {
 }
 
 function selectStick(id) {
-    console.log(id);
     sticks[selected_stickID].material.color.setHex("0xF50176");
     selected_stickID = id - 1;
     sticks[selected_stickID].material.color.setHex("0xffffff");
@@ -333,7 +305,7 @@ function render() {
     'use strict';
     delta = clock.getDelta();
     keyPressed(delta);
-    ball.updatePosition(delta);
+    balls.forEach(ball => ball.update(delta));
     renderer.render(scene, camera);
 }
 
