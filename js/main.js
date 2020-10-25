@@ -107,10 +107,6 @@ function selectStick(id) {
     sticks[selected_stickID].material.color.setHex("0xffffff");
 }
 
-function checkCollisions() {
-    balls.forEach(ball => ball.checkCollisions(delta, table_top.walls));
-}
-
 function onResize() {
     'use strict';
 
@@ -203,9 +199,6 @@ function init() {
 
 function animate() {
     "use strict";
-
-    checkCollisions();
-    balls.forEach(ball => ball.update(delta, table_top.walls));
 
     render();
     requestAnimationFrame(animate);
