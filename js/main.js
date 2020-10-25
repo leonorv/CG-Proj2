@@ -39,6 +39,7 @@ class Ball extends THREE.Object3D {
         this.direction = new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1).normalize();;
         this.angle = 0;
         this.position.set(x, y, z);
+        this.old = new THREE.Vector3(x, y, z);
         
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
         this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, wireframe: true} );
@@ -52,6 +53,9 @@ class Ball extends THREE.Object3D {
         this.rotateY(this.angle);
 
         this.friction = 3;
+
+        this.inCollision = false;
+        console.log(this.direction);
      
         this.axis = new THREE.AxisHelper(1.5*radius);
 
@@ -78,22 +82,32 @@ class Ball extends THREE.Object3D {
     }
     checkWallCollision(wall) {
         if (wall.position.z == 0 && Math.abs(this.position.x) + this.radius >= Math.abs(wall.position.x)) {
-            this.angle = this.direction.angleTo(z_axis);
-            this.rotateY(this.angle);
+            var new_angle = this.direction.angleTo(x_axis);
+            new_angle = ( this.direction.z < 0 ) ? new_angle : -new_angle;
+            this.angle = new_angle;
+            this.rotateY( this.angle );
+            this.direction.applyAxisAngle(y_axis, this.angle);
         }
 
         if (wall.position.x == 0 && Math.abs(this.position.z) + this.radius >= Math.abs(wall.position.z)) {
-            this.angle = this.direction.angleTo(x_axis);
+            var new_angle = this.direction.angleTo(x_axis);
+            new_angle = ( this.direction.z < 0 ) ? new_angle : -new_angle;
+            this.angle = new_angle;
             this.rotateY(this.angle);
+            this.direction.applyAxisAngle(y_axis, this.angle);
+
         }
+
     }
 
     
     update(delta, walls){
         this.translateOnAxis(x_axis, this.velocity * delta / (2*this.radius));
         this.mesh.rotateZ(-this.velocity * delta /10 );
+            
         if (this.velocity > 0) 
             this.velocity -= this.friction*delta;
+        
     }
 }
 
