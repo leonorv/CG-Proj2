@@ -49,28 +49,51 @@ class Ball extends THREE.Object3D {
 
         else if (this.direction.x != 0 && this.direction.z < 0)
             this.angle = this.direction.angleTo(x_axis);
-
         this.rotateY(this.angle);
 
-        this.dirChanged = false;
+        this.friction = 3;
      
         this.axis = new THREE.AxisHelper(1.5*radius);
 
         this.add(this.mesh);
         this.add(this.axis);
         scene.add(this);
+
     }
 
-    rotateVelocity(velocity, angle){
-		var x = velocity.x * Math.cos(angle) - velocity.z * Math.sin(angle);
-		var z = velocity.x * Math.sin(angle) + velocity.z * Math.cos(angle);
-
-        return new THREE.Vector3(x,0,z)
+    rotateVelocity(direction, angle){
+		//var x = direction.x * Math.cos(angle) - direction.z * Math.sin(angle);
+        //var z = direction.x * Math.sin(angle) + direction.z * Math.cos(angle);
+        return new THREE.Vector3(x, 0, z).normalize();
     }
+
+    checkCollisions(delta, walls) {
+        this.checkWallCollisions(delta, walls);
+    }
+
+    checkWallCollisions(delta, walls) {
+        walls.forEach(wall => this.checkWallCollision(wall));
+
+
+    }
+    checkWallCollision(wall) {
+        if (wall.position.z == 0 && Math.abs(this.position.x) + this.radius >= Math.abs(wall.position.x)) {
+            this.angle = this.direction.angleTo(z_axis);
+            this.rotateY(this.angle);
+        }
+
+        if (wall.position.x == 0 && Math.abs(this.position.z) + this.radius >= Math.abs(wall.position.z)) {
+            this.angle = this.direction.angleTo(x_axis);
+            this.rotateY(this.angle);
+        }
+    }
+
     
-    update(delta){
-		this.translateOnAxis(x_axis, this.velocity * delta / 5);
+    update(delta, walls){
+        this.translateOnAxis(x_axis, this.velocity * delta / (2*this.radius));
         this.mesh.rotateZ(-this.velocity * delta /10 );
+        if (this.velocity > 0) 
+            this.velocity -= this.friction*delta;
     }
 }
 
@@ -195,8 +218,8 @@ class Table extends THREE.Object3D {
 
 function createBalls(n, radius) {
     for(var i = 0; i < n; i++) {
-        var x = Math.random() * (table_top.width - radius) - (table_top.width-radius)/2;
-        var z = Math.random() * (table_top.length - radius) - (table_top.length-radius)/2;
+        var x = Math.random() * (table_top.width - 2*radius) - (table_top.width - 2*radius)/2;
+        var z = Math.random() * (table_top.length - 2*radius) - (table_top.length - 2*radius)/2;
         var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 20);
         balls.push(ball);
         scene.add(ball);
@@ -255,6 +278,10 @@ function selectStick(id) {
     sticks[selected_stickID].material.color.setHex("0xffffff");
 }
 
+function checkCollisions() {
+    balls.forEach(ball => ball.checkCollisions(delta, table_top.walls));
+}
+
 function onResize() {
     'use strict';
 
@@ -305,7 +332,6 @@ function render() {
     'use strict';
     delta = clock.getDelta();
     keyPressed(delta);
-    balls.forEach(ball => ball.update(delta));
     renderer.render(scene, camera);
 }
 
@@ -345,6 +371,9 @@ function init() {
 
 function animate() {
     "use strict";
+
+    checkCollisions();
+    balls.forEach(ball => ball.update(delta, table_top.walls));
 
     render();
     requestAnimationFrame(animate);
