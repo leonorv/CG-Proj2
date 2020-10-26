@@ -48,8 +48,8 @@ class CueStick extends THREE.Object3D {
 
 function createBalls(n, radius) {
     for(var i = 0; i < n; i++) {
-        var x = Math.floor(Math.random() * ((table_top.width/2-radius) - (-table_top.width/2+radius)) ) + (-table_top.width/2+radius);
-        var z = Math.floor(Math.random() * ((table_top.length/2-radius) - (-table_top.length/2+radius)) ) + (-table_top.length/2+radius);
+        var x = Math.floor(Math.random() * ((table_top.width/2-radius-table_top.walls[0].length) - (-table_top.width/2+radius+table_top.walls[0].length))) + (-table_top.width/2+radius+table_top.walls[0].length);
+        var z = Math.floor(Math.random() * ((table_top.length/2-radius-table_top.walls[0].length) - (-table_top.length/2+radius+table_top.walls[0].length))) + (-table_top.length/2+radius+table_top.walls[0].length);
         var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 40);
         balls.push(ball);
         scene.add(ball);
@@ -68,7 +68,7 @@ function createCueSticks() {
 
 function createTable() {
     table_base = new TableBase(0, 0, 0, 15);
-    table_top = new TableTop(0, table_base.height+2.5, 0, 60, 5, 30);
+    table_top = new TableTop(0, table_base.height/2+2.5, 0, 60, 5, 30);
     table = new Table(table_base, table_top);
     scene.add(table);
 }
@@ -157,9 +157,6 @@ function render() {
     'use strict';
     delta = clock.getDelta();
     keyPressed(delta);
-    balls.forEach(ball => ball.update(delta));
-    balls.forEach(ball => table_top.wallCollided(ball));
-
     renderer.render(scene, camera);
 }
 
@@ -199,6 +196,9 @@ function init() {
 
 function animate() {
     "use strict";
+
+    balls.forEach(ball => ball.update(delta));
+    //balls.forEach(ball => table_top.wallCollided(ball));
 
     render();
     requestAnimationFrame(animate);

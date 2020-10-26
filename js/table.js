@@ -5,7 +5,8 @@ class Wall extends THREE.Object3D {
         this.width = width;
         this.height = 2;
         this.length = 2;
-        this.bounding_box;
+        this.min;
+        this.max;
         this.geometry = new THREE.BoxGeometry(this.width, this.height, this.length);
         this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, wireframe: true} );
         this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -14,15 +15,17 @@ class Wall extends THREE.Object3D {
     }
 
     addBoundingBox() {
-        this.bounding_box = new BoundingBox(new THREE.Vector3(this.position.x-this.width/2, this.position.y-this.height/2, this.position.z-this.length/2), 
-            new THREE.Vector3(this.position.x+this.width/2, this.position.y+this.height/2, this.position.z+this.length/2));
-        //this.add(this.bounding_box);
+        this.min = new THREE.Vector3(-25, 0, -10);
+        this.max = new THREE.Vector3(25, 0, 10);
         this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, wireframe: false} );
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         scene.add(this);
-        console.log(this.bounding_box.min, this.bounding_box.max);
-        console.log(this.position.x, this.position.y,this.position.z);
+    }
+
+    intersect(other) {
+        return (this.min.x <= other.max.x && this.max.x >= other.min.x) &&
+        (this.min.z <= other.max.z && this.max.z >= other.min.z);
     }
 }
 
@@ -46,24 +49,24 @@ class TableTop extends THREE.Object3D {
 
     addWalls() {
         this.walls.push(new Wall(this.width));
-        this.walls[0].position.set(0, this.position.y + this.height/2 + this.walls[0].height/2, this.length/2 - this.walls[0].length/2);
+        this.walls[0].position.set(0, this.height/2 + this.walls[0].height/2, this.length/2 - this.walls[0].length/2);
         this.walls[0].addBoundingBox();
 
         this.walls.push(new Wall(this.width));
-        this.walls[1].position.set(0, this.position.y + this.height/2 + this.walls[0].height/2, -this.length/2 + this.walls[1].length/2);
+        this.walls[1].position.set(0, this.height/2 + this.walls[0].height/2, -this.length/2 + this.walls[1].length/2);
         this.walls[1].addBoundingBox();
 
         this.walls.push(new Wall(this.length));
-        this.walls[2].position.set(this.width/2 - this.walls[2].length/2, this.position.y + this.height/2 + this.walls[0].height/2, 0);
-        this.walls[2].addBoundingBox();
+        this.walls[2].position.set(this.width/2 - this.walls[2].length/2, this.height/2 + this.walls[0].height/2, 0);
         this.walls[2].rotateY(Math.PI/2);
+        this.walls[2].addBoundingBox();
 
         this.walls.push(new Wall(this.length));
-        this.walls[3].position.set(-this.width/2 + this.walls[2].length/2, this.position.y + this.height/2 + this.walls[0].height/2, 0);
-        this.walls[3].addBoundingBox();
+        this.walls[3].position.set(-this.width/2 + this.walls[2].length/2, this.height/2 + this.walls[0].height/2, 0);
         this.walls[3].rotateY(Math.PI/2);
+        this.walls[3].addBoundingBox();
 
-        for(var i; i < 4; i++) {
+        for(var i = 0; i < 4; i++) {
             this.add(this.walls[i]);
         }
     }
@@ -80,26 +83,25 @@ class TableTop extends THREE.Object3D {
         }
     }
 
-    wallCollided(ball) {
-        if (this.walls[0].bounding_box.intersect(ball.bounding_box) && ball.direction.x > 0) {
+    checkWallCollision(ball) {
+        if (table_top.width/2-table_top.walls[0].length < Math.abs(ball.position.x)+1.5) {
+            ball.hasCollided_x = true;
+            return true;
+        }
+        /*if (-table_top.width/2 < Math.abs(ball.position.x) + 1.5 && Math.abs(ball.position.x) + 1.5 < -table_top.width/2 && ball.direction.x < 0) {
             ball.direction.x *= -1;
             ball.changeDirection();
+        }*/
+        if (table_top.length/2-table_top.walls[0].length < Math.abs(ball.position.z) + 1.5) {
+            ball.hasCollided_z = true;
+            return true;
+            //ball.old_position.set(ball.position.x, ball.position.y, ball.position.z);
         }
-        if (this.walls[1].bounding_box.intersect(ball.bounding_box) && ball.direction.x < 0) {
-            ball.direction.x *= -1;
-            ball.changeDirection();
-        }
-        if (this.walls[2].bounding_box.intersect(ball.bounding_box) && ball.direction.z > 0) {
-    
+        /*if (-table_top.length/2 < Math.abs(ball.position.z)+1.5 && Math.abs(ball.position.z)+1.5 < -table_top.length/2  && ball.direction.z < 0) {
             ball.direction.z *= -1;
             ball.changeDirection();
-        }
-        if (this.walls[3].bounding_box.intersect(ball.bounding_box) && ball.direction.z < 0) {
-    
-            ball.direction.z *= -1;
-            ball.changeDirection();
-        }
-        ball.changeRotation();
+        }*/
+        return false;
     }
 }
 

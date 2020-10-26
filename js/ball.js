@@ -20,7 +20,10 @@ class Ball extends THREE.Object3D {
         this.radius = radius;
         this.direction = new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1).normalize();;
         this.angle = 0;
+        this.hasCollided_x = false;
+        this.hasCollided_z = false;
         this.position.set(x, y, z);
+        this.old_position = new THREE.Vector3(this.position.x,this.position.y,this.position.z);
         this.bounding_box = new BoundingBox(new THREE.Vector3(x-radius, y-radius, z-radius), new THREE.Vector3(x+radius, y+radius, z+radius));
         
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
@@ -44,16 +47,28 @@ class Ball extends THREE.Object3D {
         scene.add(this);
     }
 
-    rotateVelocity(velocity, angle){
-		var x = velocity.x * Math.cos(angle) - velocity.z * Math.sin(angle);
-		var z = velocity.x * Math.sin(angle) + velocity.z * Math.cos(angle);
-
-        return new THREE.Vector3(x,0,z)
-    }
-    
     update(delta){
-		this.translateOnAxis(x_axis, this.velocity * delta / 5);
-        this.mesh.rotateZ(-this.velocity * delta /10 );
+        if (table_top.checkWallCollision(this))
+            this.treatWallCollision();
+        else
+            this.old_position.set(this.position.x, this.position.y, this.position.z);
+        this.changeRotation();
+        this.translateOnAxis(x_axis, this.velocity * delta/5);
+        this.mesh.rotateZ(-this.velocity * delta/10);
+    }
+    treatWallCollision() {
+        if (this.hasCollided_x) {
+            this.position.set(this.old_position.x, this.old_position.y, this.old_position.z);
+            this.direction.x *= -1;
+            this.changeDirection();
+            this.hasCollided_x = false;
+        }
+        else if (this.hasCollided_z) {
+            this.position.set(this.old_position.x, this.old_position.y, this.old_position.z);
+            this.direction.z *= -1;
+            this.changeDirection();
+            this.hasCollided_z = false;
+        }
     }
 
     changeDirection() {
