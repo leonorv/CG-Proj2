@@ -10,13 +10,13 @@ class Ball extends THREE.Object3D {
         this.hasCollided_z = false;
         this.hasBallCollided = false;
         this.isFalling = false;
-        this.friction = 0.05;
+        this.friction = 3;
         this.position.set(x, y, z);
         this.old_position = new THREE.Vector3(this.position.x,this.position.y,this.position.z);
         
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
         this.color = ball_colors[Math.floor(Math.random() * ball_colors.length)];
-        this.material = new THREE.MeshBasicMaterial( {color: this.color, wireframe: true} );
+        this.material = new THREE.MeshBasicMaterial( {color: this.color, wireframe: true});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
 
         if (this.direction.x != 0 && this.direction.z >= 0)
@@ -42,16 +42,15 @@ class Ball extends THREE.Object3D {
             return;
         }
         this.checkCollisions(i);
-        this.roll();
-    
+        this.roll(delta);
     }
 
-    roll() {
+    roll(delta) {
         this.changeRotation();
         this.translateOnAxis(x_axis, this.velocity * delta/this.radius);
         this.mesh.rotateZ(-this.velocity * delta/2*this.radius);
-        if (this.velocity >= this.friction)
-            this.velocity -= this.friction;
+        if (this.velocity >= this.friction*delta)
+            this.velocity -= this.friction*delta;
         else
             this.velocity = 0;
     }
@@ -65,8 +64,9 @@ class Ball extends THREE.Object3D {
             this.treatPocketCollision();
         if (table_top.checkWallCollision(this)) 
             this.treatWallCollision();
-        if (!checkBallCollision(this, i)) 
+        if (!checkBallCollision(this, i)) {
             this.old_position.set(this.position.x, this.position.y, this.position.z);
+        }
     }
 
     treatWallCollision() {

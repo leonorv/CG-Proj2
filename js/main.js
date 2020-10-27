@@ -8,7 +8,7 @@ var clock, delta;
 var SCREEN_WIDTH = window.innerWidth;
 var SCREEN_HEIGHT = window.innerHeight;
 var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
-var cameraTop, cameraPerspective;
+var cameraTop, cameraPerspective, cameraFollower;
 var frustumSize = 100;
 var table_base, table, table_top;
 var sticks = new Array();
@@ -16,6 +16,7 @@ var balls = new Array();
 var ball_colors = [0xfede2b, 0x3d72b4, 0xfe0037, 0x613686, 0xff7f3e, 0x57977c, 0xb16975, 0x585864];
 
 var selected_stickID = 0;
+var last_ballID = 0;
 var smallAngle = 0.1;
 
 var keys = {
@@ -70,6 +71,17 @@ function checkBallCollision(ball, i) {
     return ball.hasBallCollided;
 }
 
+function canCreateShootingBall(shooting_ball) {
+    balls.forEach(ball => {
+        var dx = ball.position.x - shooting_ball.position.x;
+        var dz = ball.position.z - shooting_ball.position.z;
+        if (ball.radius + shooting_ball.radius >= Math.sqrt(dx*dx+dz*dz)) {
+            return false;
+        }
+    });
+    return true;
+}
+
 function createCueSticks() {
     var cueHeight = table_base.height/2 + table_top.height + table_top.walls[0].height + 0.5;
     sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length/2 - table_top.walls[0].length - 1, 20, -Math.PI/2, 0)); //front
@@ -104,9 +116,10 @@ function createScene() {
 
 function createCamera() {
     'use strict';
-    /*TOP CAMERA*/
     cameraTop = new THREE.OrthographicCamera( 0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, 0.5* frustumSize / 2, 0.5 * frustumSize / - 2, 2, 2000 );
     cameraPerspective = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+    cameraFollower = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+    /*TOP CAMERA*/
     cameraTop.position.set(0,frustumSize,0);
     cameraTop.lookAt(scene.position);
     scene.add(cameraTop);
@@ -114,6 +127,10 @@ function createCamera() {
     cameraPerspective.position.set(50, 50, 50);
     cameraPerspective.lookAt(scene.position);
     scene.add(cameraPerspective);
+    /*PERSPECTIVE POSITION FOR FOLLOW CAMERA*/
+    cameraFollower.position.set(50, 50, 50);
+    cameraFollower.lookAt(balls[last_ballID].position);
+    scene.add(cameraFollower);
 
     camera = cameraTop;
 }
@@ -125,10 +142,14 @@ function selectStick(id) {
 }
 
 function shootBall() {
-    console.log("jsdg");
     var ball = sticks[selected_stickID].createBall();
+    while(!canCreateShootingBall(ball)) {
+        ball.position.z += 1;
+        ball.position.x += 1;
+    }
+    ball.material.color.setHex(0xffffff);
     balls.push(ball);
-    console.log(ball.radius);
+    last_ballID = balls.length - 1;
     scene.add(ball);
 }
 
@@ -155,12 +176,18 @@ function onKeyDown(e) {
     switch(e.keyCode) {
         case 32: 
             shootBall();
+            onResize();
+            break;
         case 49:
             camera = cameraTop;
             onResize();
             break;
         case 50:
             camera = cameraPerspective;
+            onResize();
+            break;
+        case 51:
+            camera = cameraFollower;
             onResize();
             break;
         case 52:
@@ -196,6 +223,20 @@ function keyPressed() {
     }
 }
 
+function updateCamera() {
+    var ball_position = balls[last_ballID].position;
+    var ball_direction = balls[last_ballID].direction;
+    cameraFollower.position.set(ball_position.x - ball_direction.x*10, ball_position.y - ball_direction.y*10 + 5, ball_position.z - ball_direction.z*10);
+    cameraFollower.lookAt(ball_position);
+}
+
+function updateScene() {
+    for(var i = 0; i < balls.length; i++) {
+        balls[i].update(delta, i);
+    }
+    updateCamera()
+}
+
 function init() {
     'use strict';
     renderer = new THREE.WebGLRenderer({
@@ -224,10 +265,7 @@ function init() {
 function animate() {
     "use strict";
 
-    for(var i = 0; i < balls.length; i++) {
-        balls[i].update(delta, i);
-    }
-    //balls.forEach(ball => table_top.wallCollided(ball));
+    updateScene();
 
     render();
     requestAnimationFrame(animate);

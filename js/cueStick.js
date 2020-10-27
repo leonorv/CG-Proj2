@@ -6,7 +6,7 @@ class CueStick extends THREE.Object3D {
         this.material = new THREE.MeshBasicMaterial({ color: 0x3e0000, wireframe: false});
         this.geometry = new THREE.CylinderGeometry(0.5, 0.75, height, 10);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.angle = 0;
+        this.angle = 0.01;
         this.limitLeft = -Math.PI/2;
         this.limitRight = Math.PI/2;
         this.add(this.mesh);
