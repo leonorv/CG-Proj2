@@ -3,7 +3,7 @@ class Wall extends THREE.Object3D {
         'use strict'
         super()
         this.width = width;
-        this.height = 2;
+        this.height = 2.1;
         this.length = 2;
         this.min;
         this.max;
@@ -44,6 +44,7 @@ class TableTop extends THREE.Object3D {
         this.position.set(x, y, z);
         this.walls = new Array();
         this.addWalls();
+        this.addPockets();
         scene.add(this);
     }
 
@@ -72,35 +73,26 @@ class TableTop extends THREE.Object3D {
     }
 
     addPockets() {
-        this.pockets.push(new Pocket(-this.width/2+2, 0, -this.length/2+2, this.height)); //upleft
-        this.pockets.push(new Pocket(this.width/2-2, 0, -this.length/2+2, this.height)); //upright
-        this.pockets.push(new Pocket(-this.width/2+2, 0, this.length/2-2, this.height)); //downleft
-        this.pockets.push(new Pocket(this.width/2-2, 0, this.length/2-2, this.height)); //downRight
-        this.pockets.push(new Pocket(0, 0, -this.length/2+2, this.height)); //middleLeft
-        this.pockets.push(new Pocket(0, 0, this.length/2-2, this.height)); //middleright
-        for(var i; i < 6; i++) {
-            this.add(pockets[i]);
+        this.pockets.push(new Pocket(-this.width/2+2+this.walls[0].length, 0, -this.length/2+2+this.walls[0].length, this.height)); //upleft
+        this.pockets.push(new Pocket(this.width/2-2-this.walls[0].length, 0, -this.length/2+2+this.walls[0].length, this.height)); //upright
+        this.pockets.push(new Pocket(-this.width/2+2+this.walls[0].length, 0, this.length/2-2-this.walls[0].length, this.height)); //downleft
+        this.pockets.push(new Pocket(this.width/2-2-this.walls[0].length, 0, this.length/2-2-this.walls[0].length, this.height)); //downRight
+        this.pockets.push(new Pocket(0, 0, -this.length/2+2+this.walls[0].length, this.height)); //middleLeft
+        this.pockets.push(new Pocket(0, 0, this.length/2-2-this.walls[0].length, this.height)); //middleright
+        for(var i = 0; i < 6; i++) {
+            this.add(this.pockets[i]);
         }
     }
 
     checkWallCollision(ball) {
-        if (table_top.width/2-table_top.walls[0].length < Math.abs(ball.position.x)+1.5) {
+        if (table_top.width/2-table_top.walls[0].length < Math.abs(ball.position.x)+ball.radius) {
             ball.hasCollided_x = true;
             return true;
         }
-        /*if (-table_top.width/2 < Math.abs(ball.position.x) + 1.5 && Math.abs(ball.position.x) + 1.5 < -table_top.width/2 && ball.direction.x < 0) {
-            ball.direction.x *= -1;
-            ball.changeDirection();
-        }*/
-        if (table_top.length/2-table_top.walls[0].length < Math.abs(ball.position.z) + 1.5) {
+        if (table_top.length/2-table_top.walls[0].length < Math.abs(ball.position.z)+ball.radius) {
             ball.hasCollided_z = true;
             return true;
-            //ball.old_position.set(ball.position.x, ball.position.y, ball.position.z);
         }
-        /*if (-table_top.length/2 < Math.abs(ball.position.z)+1.5 && Math.abs(ball.position.z)+1.5 < -table_top.length/2  && ball.direction.z < 0) {
-            ball.direction.z *= -1;
-            ball.changeDirection();
-        }*/
         return false;
     }
 }
@@ -125,7 +117,7 @@ class Pocket extends THREE.Object3D {
         super();
         this.height = height + 0.1; //+ 0.1 for visibility
         this.material = new THREE.MeshBasicMaterial({color: 0x000000});
-        this.geometry = new THREE.CylinderGeometry(2, 2, this.height, 30);
+        this.geometry = new THREE.CylinderGeometry(1.5, 1.5, this.height, 30);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         this.position.set(x, y, z);

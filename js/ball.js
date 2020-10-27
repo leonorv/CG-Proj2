@@ -22,6 +22,8 @@ class Ball extends THREE.Object3D {
         this.angle = 0;
         this.hasCollided_x = false;
         this.hasCollided_z = false;
+        this.hasBallCollided = false;
+        this.friction = 0.05;
         this.position.set(x, y, z);
         this.old_position = new THREE.Vector3(this.position.x,this.position.y,this.position.z);
         this.bounding_box = new BoundingBox(new THREE.Vector3(x-radius, y-radius, z-radius), new THREE.Vector3(x+radius, y+radius, z+radius));
@@ -47,15 +49,21 @@ class Ball extends THREE.Object3D {
         scene.add(this);
     }
 
-    update(delta){
+    update(delta, i){
         if (table_top.checkWallCollision(this))
             this.treatWallCollision();
         else
-            this.old_position.set(this.position.x, this.position.y, this.position.z);
+            if (!checkBallCollision(this, i))
+                this.old_position.set(this.position.x, this.position.y, this.position.z);
         this.changeRotation();
-        this.translateOnAxis(x_axis, this.velocity * delta/5);
-        this.mesh.rotateZ(-this.velocity * delta/10);
+        this.translateOnAxis(x_axis, this.velocity * delta/this.radius);
+        this.mesh.rotateZ(-this.velocity * delta/2*this.radius);
+        if (this.velocity >= this.friction)
+            this.velocity-=this.friction;
+        else
+            this.velocity = 0;
     }
+
     treatWallCollision() {
         if (this.hasCollided_x) {
             this.position.set(this.old_position.x, this.old_position.y, this.old_position.z);
@@ -68,6 +76,39 @@ class Ball extends THREE.Object3D {
             this.direction.z *= -1;
             this.changeDirection();
             this.hasCollided_z = false;
+        }
+    }
+
+    treatBallCollision(other) {
+        if (this.hasBallCollided) {
+
+            this.position.set(this.old_position.x, this.old_position.y, this.old_position.z);
+            other.position.set(other.old_position.x, other.old_position.y, other.old_position.z);
+
+            var v1 = this.velocity;
+            var v2 = other.velocity;
+
+            this.velocity = v2;
+            other.velocity = v1;
+
+            var dx1 = this.direction.x;
+            var dz1 = this.direction.z;
+
+            var dx2 = other.direction.x;
+            var dz2 = other.direction.z;
+
+            this.direction.x = dx2;
+            this.direction.z = dz2;
+
+            other.direction.x = dx1;
+            other.direction.z = dz1;
+
+            if (dx2 != 0 && dz2 != 0) this.dirChanged = true; 
+            if (dx1 != 0 && dz1 != 0) other.dirChanged = true;
+
+            other.changeRotation();
+
+            this.hasBallCollided = false;
         }
     }
 

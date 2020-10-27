@@ -47,13 +47,41 @@ class CueStick extends THREE.Object3D {
 }
 
 function createBalls(n, radius) {
+    var done = false;
     for(var i = 0; i < n; i++) {
-        var x = Math.floor(Math.random() * ((table_top.width/2-radius-table_top.walls[0].length) - (-table_top.width/2+radius+table_top.walls[0].length))) + (-table_top.width/2+radius+table_top.walls[0].length);
-        var z = Math.floor(Math.random() * ((table_top.length/2-radius-table_top.walls[0].length) - (-table_top.length/2+radius+table_top.walls[0].length))) + (-table_top.length/2+radius+table_top.walls[0].length);
-        var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 40);
+        while(!done) {
+            done = true;
+            var x = Math.floor(Math.random() * ((table_top.width/2-radius-table_top.walls[0].length) - (-table_top.width/2+radius+table_top.walls[0].length))) + (-table_top.width/2+radius+table_top.walls[0].length);
+            var z = Math.floor(Math.random() * ((table_top.length/2-radius-table_top.walls[0].length) - (-table_top.length/2+radius+table_top.walls[0].length))) + (-table_top.length/2+radius+table_top.walls[0].length);
+            balls.forEach(other => {
+                var dx = x - other.position.x;
+                var dz = z - other.position.z;
+                if (radius + other.radius >= Math.sqrt(dx*dx+dz*dz)) {
+                    done = false;
+                }
+            });
+        } 
+        var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 20);
         balls.push(ball);
         scene.add(ball);
+        done = false;
     }
+}
+
+function checkBallCollision(ball, i) {
+    for (var j=i+1; j<balls.length; j++) {
+        if (balls[i] != balls[j]) {
+            var dx = balls[i].position.x - balls[j].position.x;
+            var dz = balls[i].position.z - balls[j].position.z;
+
+            if (balls[i].radius + balls[j].radius >= Math.sqrt(dx*dx+dz*dz)) {
+                balls[i].hasBallCollided = true;
+                balls[i].treatBallCollision(balls[j]);
+            }
+        }
+    }
+    ball.changeRotation();
+    return ball.hasBallCollided;
 }
 
 function createCueSticks() {
@@ -82,7 +110,7 @@ function createScene() {
 
     createTable();
     createCueSticks();
-    createBalls(15, 1.5);
+    createBalls(15, 1);
 }
 
 function createCamera() {
@@ -197,7 +225,9 @@ function init() {
 function animate() {
     "use strict";
 
-    balls.forEach(ball => ball.update(delta));
+    for(var i = 0; i < balls.length; i++) {
+        balls[i].update(delta, i);
+    }
     //balls.forEach(ball => table_top.wallCollided(ball));
 
     render();
