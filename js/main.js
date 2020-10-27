@@ -13,6 +13,7 @@ var frustumSize = 100;
 var table_base, table, table_top;
 var sticks = new Array();
 var balls = new Array();
+var ball_colors = [0xfede2b, 0x3d72b4, 0xfe0037, 0x613686, 0xff7f3e, 0x57977c, 0xb16975, 0x585864];
 
 var selected_stickID = 0;
 

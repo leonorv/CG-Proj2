@@ -8,16 +8,7 @@ class Wall extends THREE.Object3D {
         this.min;
         this.max;
         this.geometry = new THREE.BoxGeometry(this.width, this.height, this.length);
-        this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, wireframe: true} );
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.add(this.mesh);
-        scene.add(this);
-    }
-
-    addBoundingBox() {
-        this.min = new THREE.Vector3(-25, 0, -10);
-        this.max = new THREE.Vector3(25, 0, 10);
-        this.material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, wireframe: false} );
+        this.material = new THREE.MeshBasicMaterial( {color: 0x672e1b, side: THREE.DoubleSide, wireframe: false} );
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         scene.add(this);
@@ -51,21 +42,17 @@ class TableTop extends THREE.Object3D {
     addWalls() {
         this.walls.push(new Wall(this.width));
         this.walls[0].position.set(0, this.height/2 + this.walls[0].height/2, this.length/2 - this.walls[0].length/2);
-        this.walls[0].addBoundingBox();
 
         this.walls.push(new Wall(this.width));
         this.walls[1].position.set(0, this.height/2 + this.walls[0].height/2, -this.length/2 + this.walls[1].length/2);
-        this.walls[1].addBoundingBox();
 
         this.walls.push(new Wall(this.length));
         this.walls[2].position.set(this.width/2 - this.walls[2].length/2, this.height/2 + this.walls[0].height/2, 0);
         this.walls[2].rotateY(Math.PI/2);
-        this.walls[2].addBoundingBox();
 
         this.walls.push(new Wall(this.length));
         this.walls[3].position.set(-this.width/2 + this.walls[2].length/2, this.height/2 + this.walls[0].height/2, 0);
         this.walls[3].rotateY(Math.PI/2);
-        this.walls[3].addBoundingBox();
 
         for(var i = 0; i < 4; i++) {
             this.add(this.walls[i]);
@@ -85,15 +72,27 @@ class TableTop extends THREE.Object3D {
     }
 
     checkWallCollision(ball) {
-        if (table_top.width/2-table_top.walls[0].length < Math.abs(ball.position.x)+ball.radius) {
+        if (this.width/2-this.walls[0].length < Math.abs(ball.position.x)+ball.radius) {
             ball.hasCollided_x = true;
             return true;
         }
-        if (table_top.length/2-table_top.walls[0].length < Math.abs(ball.position.z)+ball.radius) {
+        if (this.length/2-this.walls[0].length < Math.abs(ball.position.z)+ball.radius) {
             ball.hasCollided_z = true;
             return true;
         }
         return false;
+    }
+
+    checkPocketCollision(ball) {
+        for (var i = 0; i < this.pockets.length; i++) {
+            var dx = ball.position.x - this.pockets[i].position.x;
+            var dz = ball.position.z - this.pockets[i].position.z;
+            if (ball.radius >= Math.sqrt(dx*dx+dz*dz)) {
+                ball.isFalling = true;
+                ball.position.set(this.pockets[i].position.x, ball.position.y, this.pockets[i].position.z);
+            }
+        }
+        return ball.isFalling;
     }
 }
 
@@ -116,8 +115,9 @@ class Pocket extends THREE.Object3D {
         'use strict';
         super();
         this.height = height + 0.1; //+ 0.1 for visibility
-        this.material = new THREE.MeshBasicMaterial({color: 0x000000});
-        this.geometry = new THREE.CylinderGeometry(1.5, 1.5, this.height, 30);
+        this.radius = 1.5
+        this.material = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.5});
+        this.geometry = new THREE.CylinderGeometry(this.radius, this.radius, this.height, 30);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         this.position.set(x, y, z);
