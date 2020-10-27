@@ -4,8 +4,8 @@ class Ball extends THREE.Object3D {
         super();
         this.velocity = velocity;
         this.radius = radius;
-        this.direction = new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1).normalize();;
         this.angle = 0;
+        this.direction = direction;
         this.hasCollided_x = false;
         this.hasCollided_z = false;
         this.hasBallCollided = false;

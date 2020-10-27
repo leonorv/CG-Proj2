@@ -16,10 +16,11 @@ var balls = new Array();
 var ball_colors = [0xfede2b, 0x3d72b4, 0xfe0037, 0x613686, 0xff7f3e, 0x57977c, 0xb16975, 0x585864];
 
 var selected_stickID = 0;
+var smallAngle = 0.1;
 
 var keys = {
     37: false, //left
-    39: false,
+    39: false, //right
     //CUE STICKS
     52: false, //4
     53: false, //5
@@ -31,27 +32,12 @@ var keys = {
     32: false, //space for shooting the ball
 }
 
-class CueStick extends THREE.Object3D {
-    constructor(x, y, z, height, angleX, angleZ) {
-        'use strict';
-        super();
-        this.height = height;
-        this.material = new THREE.MeshBasicMaterial({ color: 0x672e1b, wireframe: false});
-        this.geometry = new THREE.CylinderGeometry(0.5, 0.75, height, 10);
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.add(this.mesh);
-        this.position.set(x, y, z);
-        this.rotateX(angleX);
-        this.rotateZ(angleZ);
-        scene.add(this);
-    }
-}
-
 function createBalls(n, radius) {
     var done = false;
     for(var i = 0; i < n; i++) {
         while(!done) {
             done = true;
+            var direction = new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1).normalize();
             var x = Math.floor(Math.random() * ((table_top.width/2-radius-table_top.walls[0].length) - (-table_top.width/2+radius+table_top.walls[0].length))) + (-table_top.width/2+radius+table_top.walls[0].length);
             var z = Math.floor(Math.random() * ((table_top.length/2-radius-table_top.walls[0].length) - (-table_top.length/2+radius+table_top.walls[0].length))) + (-table_top.length/2+radius+table_top.walls[0].length);
             balls.forEach(other => {
@@ -62,7 +48,7 @@ function createBalls(n, radius) {
                 }
             });
         } 
-        var ball = new Ball(x, table_top.position.y + table_top.height/2 + radius, z, radius, new THREE.Vector3(0,0,0), 20);
+        var ball = new Ball(x, table_top.position.y + table_top.height/2 + radius, z, radius, direction, 20);
         balls.push(ball);
         scene.add(ball);
         done = false;
@@ -74,7 +60,6 @@ function checkBallCollision(ball, i) {
         if (balls[i] != balls[j]) {
             var dx = balls[i].position.x - balls[j].position.x;
             var dz = balls[i].position.z - balls[j].position.z;
-
             if (balls[i].radius + balls[j].radius >= Math.sqrt(dx*dx+dz*dz)) {
                 balls[i].hasBallCollided = true;
                 balls[i].treatBallCollision(balls[j]);
@@ -86,13 +71,14 @@ function checkBallCollision(ball, i) {
 }
 
 function createCueSticks() {
-    var cueHeight = table_base.height + table_top.walls[0].height/2;
-    sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0)); //front
-    sticks.push(new CueStick(-table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0));
-    sticks.push(new CueStick(table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0)); //back
-    sticks.push(new CueStick(-table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0));
-    sticks.push(new CueStick(table_top.length + 20, cueHeight, 0, 20, Math.PI/2, Math.PI/2)); //heads of the table
-    sticks.push(new CueStick(-table_top.length - 20, cueHeight, 0, 20, Math.PI/2, -Math.PI/2));
+    var cueHeight = table_base.height/2 + table_top.height + table_top.walls[0].height + 0.5;
+    sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length/2 - table_top.walls[0].length - 1, 20, -Math.PI/2, 0)); //front
+    sticks.push(new CueStick(-table_top.width/4, cueHeight, table_top.length/2 - table_top.walls[0].length - 1, 20, -Math.PI/2, 0));
+    sticks.push(new CueStick(table_top.width/4, cueHeight, -table_top.length/2 + table_top.walls[0].length + 1, 20, Math.PI/2, 0)); //back
+    sticks.push(new CueStick(-table_top.width/4, cueHeight, -table_top.length/2 + table_top.walls[0].length + 1, 20, Math.PI/2, 0));
+    sticks.push(new CueStick(table_top.width/2 - table_top.walls[0].length - 1, cueHeight, 0, 20, Math.PI/2, Math.PI/2)); //heads of the table
+    sticks.push(new CueStick(-table_top.width/2 + table_top.walls[0].length + 1, cueHeight, 0, 20, Math.PI/2, -Math.PI/2));
+    sticks[selected_stickID].material.color.setHex("0x57977c");
 }
 
 function createTable() {
@@ -133,9 +119,17 @@ function createCamera() {
 }
 
 function selectStick(id) {
-    sticks[selected_stickID].material.color.setHex("0x672e1b");
+    sticks[selected_stickID].material.color.setHex("0x3e0000");
     selected_stickID = id - 1;
     sticks[selected_stickID].material.color.setHex("0x57977c"); //selected color
+}
+
+function shootBall() {
+    console.log("jsdg");
+    var ball = sticks[selected_stickID].createBall();
+    balls.push(ball);
+    console.log(ball.radius);
+    scene.add(ball);
 }
 
 function onResize() {
@@ -159,6 +153,8 @@ function onKeyDown(e) {
     keys[e.keyCode] = true;
 
     switch(e.keyCode) {
+        case 32: 
+            shootBall();
         case 49:
             camera = cameraTop;
             onResize();
@@ -192,11 +188,11 @@ function render() {
 }
 
 function keyPressed() {
-    if(keys[39]) {
-        camera.position.x += 1;
+    if(keys[37]) { //left
+        sticks[selected_stickID].turnLeft(smallAngle);
     }
-    if(keys[37]) {
-        camera.position.x -= 1;
+    if(keys[39]) {
+        sticks[selected_stickID].turnRight(smallAngle);
     }
 }
 
