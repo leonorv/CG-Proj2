@@ -36,7 +36,7 @@ class CueStick extends THREE.Object3D {
         'use strict';
         super();
         this.height = height;
-        this.material = new THREE.MeshBasicMaterial({ color: 0xF50176, wireframe: true});
+        this.material = new THREE.MeshBasicMaterial({ color: 0x672e1b, wireframe: false});
         this.geometry = new THREE.CylinderGeometry(0.5, 0.75, height, 10);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
@@ -62,7 +62,7 @@ function createBalls(n, radius) {
                 }
             });
         } 
-        var ball = new Ball(x, table_top.position.y + table_top.height, z, radius, new THREE.Vector3(0,0,0), 20);
+        var ball = new Ball(x, table_top.position.y + table_top.height/2 + radius, z, radius, new THREE.Vector3(0,0,0), 20);
         balls.push(ball);
         scene.add(ball);
         done = false;
@@ -86,7 +86,7 @@ function checkBallCollision(ball, i) {
 }
 
 function createCueSticks() {
-    var cueHeight = table_base.height+ table_top.height + table_top.walls[0].height/2;
+    var cueHeight = table_base.height + table_top.walls[0].height/2;
     sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0)); //front
     sticks.push(new CueStick(-table_top.width/4, cueHeight, table_top.length, 20, -Math.PI/2, 0));
     sticks.push(new CueStick(table_top.width/4, cueHeight, -table_top.length, 20, Math.PI/2, 0)); //back
@@ -106,6 +106,8 @@ function createScene() {
     'use strict';
 
     scene = new THREE.Scene();
+    //scene.background = new THREE.Color(0xE9DDC8);
+    scene.background = new THREE.Color(0xD1BF9B);
     scene.add(new THREE.AxisHelper(10));
     scene.add(new THREE.AmbientLight(0x404040)); //soft ambient light
 
@@ -131,9 +133,9 @@ function createCamera() {
 }
 
 function selectStick(id) {
-    sticks[selected_stickID].material.color.setHex("0xF50176");
+    sticks[selected_stickID].material.color.setHex("0x672e1b");
     selected_stickID = id - 1;
-    sticks[selected_stickID].material.color.setHex("0xffffff");
+    sticks[selected_stickID].material.color.setHex("0x57977c"); //selected color
 }
 
 function onResize() {
