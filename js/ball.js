@@ -130,4 +130,14 @@ class Ball extends THREE.Object3D {
         this.rotateY(this.angle);
         this.directionChanged = false;
     }
+
+    correctShootingBallPosition() {
+        balls.forEach(ball => {
+            var dx = ball.position.x - this.position.x;
+            var dz = ball.position.z - this.position.z;
+            if (ball.radius + this.radius >= Math.sqrt(dx*dx+dz*dz)) {
+                this.position.set(this.position.x + 5, this.position.y, this.position.z);
+            }
+        });
+    }
 }

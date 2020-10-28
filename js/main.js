@@ -1,15 +1,19 @@
 const x_axis = new THREE.Vector3(1, 0, 0);
 const y_axis = new THREE.Vector3(0, 1, 0);
 const z_axis = new THREE.Vector3(0, 0, 1);
+var SCREEN_WIDTH = window.innerWidth;
+var SCREEN_HEIGHT = window.innerHeight;
+var fov = 50; //Camera frustum vertical field of view.
+var far = 1000; //Camera frustum far plane.
+var near = 1; //Camera frustum near plane.
+var aspect = SCREEN_WIDTH / SCREEN_HEIGHT; //Camera frustum aspect ratio.
+var frustumSize = 100;
 
 var camera, scene, renderer;
 
 var clock, delta;
-var SCREEN_WIDTH = window.innerWidth;
-var SCREEN_HEIGHT = window.innerHeight;
-var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
 var cameraTop, cameraPerspective, cameraFollower;
-var frustumSize = 100;
 var table_base, table, table_top;
 var sticks = new Array();
 var balls = new Array();
@@ -71,17 +75,6 @@ function checkBallCollision(ball, i) {
     return ball.hasBallCollided;
 }
 
-function canCreateShootingBall(shooting_ball) {
-    balls.forEach(ball => {
-        var dx = ball.position.x - shooting_ball.position.x;
-        var dz = ball.position.z - shooting_ball.position.z;
-        if (ball.radius + shooting_ball.radius >= Math.sqrt(dx*dx+dz*dz)) {
-            return false;
-        }
-    });
-    return true;
-}
-
 function createCueSticks() {
     var cueHeight = table_base.height/2 + table_top.height + table_top.walls[0].height + 0.5;
     sticks.push(new CueStick(table_top.width/4, cueHeight, table_top.length/2 - table_top.walls[0].length - 1, 20, -Math.PI/2, 0)); //front
@@ -104,10 +97,8 @@ function createScene() {
     'use strict';
 
     scene = new THREE.Scene();
-    //scene.background = new THREE.Color(0xE9DDC8);
     scene.background = new THREE.Color(0xD1BF9B);
     scene.add(new THREE.AxisHelper(10));
-    scene.add(new THREE.AmbientLight(0x404040)); //soft ambient light
 
     createTable();
     createCueSticks();
@@ -117,8 +108,8 @@ function createScene() {
 function createCamera() {
     'use strict';
     cameraTop = new THREE.OrthographicCamera( 0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, 0.5* frustumSize / 2, 0.5 * frustumSize / - 2, 2, 2000 );
-    cameraPerspective = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
-    cameraFollower = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+    cameraPerspective = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    cameraFollower = new THREE.PerspectiveCamera(fov, aspect, near, far);
     /*TOP CAMERA*/
     cameraTop.position.set(0,frustumSize,0);
     cameraTop.lookAt(scene.position);
@@ -143,10 +134,7 @@ function selectStick(id) {
 
 function shootBall() {
     var ball = sticks[selected_stickID].createBall();
-    while(!canCreateShootingBall(ball)) {
-        ball.position.z += 1;
-        ball.position.x += 1;
-    }
+    ball.correctShootingBallPosition();
     ball.material.color.setHex(0xffffff);
     balls.push(ball);
     last_ballID = balls.length - 1;
@@ -218,7 +206,7 @@ function keyPressed() {
     if(keys[37]) { //left
         sticks[selected_stickID].turnLeft(smallAngle);
     }
-    if(keys[39]) {
+    if(keys[39]) { //right
         sticks[selected_stickID].turnRight(smallAngle);
     }
 }

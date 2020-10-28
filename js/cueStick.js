@@ -10,21 +10,21 @@ class CueStick extends THREE.Object3D {
         this.limitLeft = -Math.PI/2;
         this.limitRight = Math.PI/2;
         this.add(this.mesh);
+        this.geometry.translate(0, -this.height/2 - 1, 0);
         this.rotateX(angleX);
         this.rotateZ(angleZ);
-        this.geometry.translate(0, -this.height/2 - 1, 0);
         this.position.set(x, y, z);
         scene.add(this);
     }
 
-    turnLeft(smallAngle) {
+    turnRight(smallAngle) {
         if(this.angle > this.limitLeft) {
             this.rotateZ(smallAngle);
             this.angle -= smallAngle;
         }
     }
 
-    turnRight(smallAngle) {
+    turnLeft(smallAngle) {
         if(this.angle < this.limitRight) {
             this.rotateZ(-smallAngle);
             this.angle += smallAngle;
