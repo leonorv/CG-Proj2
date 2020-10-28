@@ -10,27 +10,23 @@ class Ball extends THREE.Object3D {
         this.hasCollided_z = false;
         this.hasBallCollided = false;
         this.isFalling = false;
+        this.directionChanged = false;
         this.friction = 3;
         this.position.set(x, y, z);
         this.old_position = new THREE.Vector3(this.position.x,this.position.y,this.position.z);
-        
         this.geometry = new THREE.SphereGeometry(this.radius, 10, 10);
         this.color = ball_colors[Math.floor(Math.random() * ball_colors.length)];
         this.material = new THREE.MeshBasicMaterial( {color: this.color, wireframe: true});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
 
+        //SET BALL ANGLE
         if (this.direction.x != 0 && this.direction.z >= 0)
             this.angle = -this.direction.angleTo(x_axis);
-
         else if (this.direction.x != 0 && this.direction.z < 0)
             this.angle = this.direction.angleTo(x_axis);
-
         this.rotateY(this.angle);
-
-        this.directionChanged = false;
-     
+        
         this.axis = new THREE.AxisHelper(1.5*radius);
-
         this.add(this.mesh);
         this.add(this.axis);
         scene.add(this);
@@ -57,6 +53,7 @@ class Ball extends THREE.Object3D {
 
     fall() {
         this.position.y -= 0.4;
+        if (this.position.y <= -50) scene.remove(this);
     }
 
     checkCollisions(i) {
@@ -92,27 +89,22 @@ class Ball extends THREE.Object3D {
 
             var v1 = this.velocity;
             var v2 = other.velocity;
-
-            this.velocity = v2;
-            other.velocity = v1;
-
             var dx1 = this.direction.x;
             var dz1 = this.direction.z;
-
             var dx2 = other.direction.x;
             var dz2 = other.direction.z;
 
+            this.velocity = v2;
+            other.velocity = v1;
             this.direction.x = dx2;
             this.direction.z = dz2;
-
             other.direction.x = dx1;
             other.direction.z = dz1;
 
             if (dx2 != 0 && dz2 != 0) this.directionChanged = true; 
             if (dx1 != 0 && dz1 != 0) other.directionChanged = true;
-
+            
             other.changeRotation();
-
             this.hasBallCollided = false;
         }
     }

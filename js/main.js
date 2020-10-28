@@ -10,9 +10,7 @@ var aspect = SCREEN_WIDTH / SCREEN_HEIGHT; //Camera frustum aspect ratio.
 var frustumSize = 100;
 
 var camera, scene, renderer;
-
 var clock, delta;
-
 var cameraTop, cameraPerspective, cameraFollower;
 var table_base, table, table_top;
 var sticks = new Array();
@@ -20,7 +18,6 @@ var balls = new Array();
 var ball_colors = [0xfede2b, 0x3d72b4, 0xfe0037, 0x613686, 0xff7f3e, 0x57977c, 0xb16975, 0x585864];
 
 var selected_stickID = 0;
-var last_ballID = 0;
 var smallAngle = 0.1;
 
 var keys = {
@@ -33,7 +30,6 @@ var keys = {
     55: false, //7
     56: false, //8
     57: false, //9
-
     32: false, //space for shooting the ball
 }
 
@@ -53,7 +49,7 @@ function createBalls(n, radius) {
                 }
             });
         } 
-        var ball = new Ball(x, table_top.position.y + table_top.height/2 + radius, z, radius, direction, 20);
+        var ball = new Ball(x, table_top.position.y + table_top.height/2 + radius, z, radius, direction, Math.random() * (20 - 5) + 5);
         balls.push(ball);
         scene.add(ball);
         done = false;
@@ -119,8 +115,7 @@ function createCamera() {
     cameraPerspective.lookAt(scene.position);
     scene.add(cameraPerspective);
     /*PERSPECTIVE POSITION FOR FOLLOW CAMERA*/
-    cameraFollower.position.set(50, 50, 50);
-    cameraFollower.lookAt(balls[last_ballID].position);
+    cameraFollower.lookAt(balls[balls.length - 1].position);
     scene.add(cameraFollower);
 
     camera = cameraTop;
@@ -137,7 +132,6 @@ function shootBall() {
     ball.correctShootingBallPosition();
     ball.material.color.setHex(0xffffff);
     balls.push(ball);
-    last_ballID = balls.length - 1;
     scene.add(ball);
 }
 
@@ -212,8 +206,8 @@ function keyPressed() {
 }
 
 function updateCamera() {
-    var ball_position = balls[last_ballID].position;
-    var ball_direction = balls[last_ballID].direction;
+    var ball_position = balls[balls.length - 1].position;
+    var ball_direction = balls[balls.length - 1].direction;
     cameraFollower.position.set(ball_position.x - ball_direction.x*10, ball_position.y - ball_direction.y*10 + 5, ball_position.z - ball_direction.z*10);
     cameraFollower.lookAt(ball_position);
 }
@@ -254,7 +248,6 @@ function animate() {
     "use strict";
 
     updateScene();
-
     render();
     requestAnimationFrame(animate);
 }

@@ -7,12 +7,14 @@ class CueStick extends THREE.Object3D {
         this.geometry = new THREE.CylinderGeometry(0.5, 0.75, height, 10);
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.angle = 0.01;
+        this.angleX = angleX;
+        this.angleZ = angleZ;
         this.limitLeft = -Math.PI/2;
         this.limitRight = Math.PI/2;
         this.add(this.mesh);
         this.geometry.translate(0, -this.height/2 - 1, 0);
-        this.rotateX(angleX);
-        this.rotateZ(angleZ);
+        this.rotateX(this.angleX);
+        this.rotateZ(this.angleZ);
         this.position.set(x, y, z);
         scene.add(this);
     }
@@ -33,6 +35,7 @@ class CueStick extends THREE.Object3D {
 
     createBall() {
         var direction = new THREE.Vector3(Math.sin(this.angle), 0, Math.cos(this.angle));
+        direction.applyAxisAngle(y_axis, -this.angleZ);
         return new Ball(this.position.x, table_top.position.y + table_top.height/2 + 1, this.position.z, 1, direction, 20);
 
     }
